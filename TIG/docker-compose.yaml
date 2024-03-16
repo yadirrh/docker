@@ -1,0 +1,57 @@
+version: '3.6'
+
+services:
+  telegraf:
+    image: telegraf
+    container_name: telegraf
+    restart: always
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - ./telegraf/telegraf.d:/etc/telegraf/telegraf.d:ro
+#      - /usr/share/snmp:/usr/share/snmp:ro
+    depends_on:
+      - influxdb
+    links:
+      - influxdb
+    ports:
+      - '8125:8125'
+    networks:
+      - monitoring
+
+  influxdb:
+    image: influxdb
+    container_name: influxdb
+    restart: always
+    env_file:
+      - .env/influxdbv2.env
+    ports:
+      - '8086:8086'
+    volumes:
+      - influxdb_data:/var/lib/influxdb:rw
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: always
+    depends_on:
+      - influxdb
+    env_file:
+      - .env/grafana.env
+    links:
+      - influxdb
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana_data:/var/lib/grafana:rw
+    networks:
+      - monitoring
+
+volumes:
+  grafana_data: {}
+  influxdb_data: {}
+
+networks:
+  monitoring:
+    driver: bridge
